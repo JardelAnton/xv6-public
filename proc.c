@@ -6,7 +6,146 @@
 #include "x86.h"
 #include "proc.h"
 #include "spinlock.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
 
+/*
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ */
+#define MIN 5
+#define MAX 25
+int v_tickets[100]; // para distribuição, armazena aos pids
+int v_l_tickets[100]; // pids Runnable para realizar ao sorteio
+int v_est[100];
+int last =0;
+
+int distribute_tickets(int t, int pid);
+int remove_tickets(int t);
+int lottery_tickets();
+void menu(int t){
+    int i;
+    if(t ==1){
+        while(t){
+            //printf("insira t tickets e o pid\n");
+           // scanf("%d",&t);
+            //scanf("%d",&pid);
+            if(t!=0)
+                //distribute_tickets(t,pid);
+            
+            for(i=0; i< last; i++){
+                //printf("[%d] ",v_tickets[i]);
+            }
+        }
+    }else if(t ==2){
+        while(t!=-1){
+            //printf("insira o t ticket a ser removido");
+            //scanf("%d",&t);
+            remove_tickets(t);
+            for(i=0; i< last; i++){
+                //printf("[%d] ",v_tickets[i]);
+            }
+        }
+    }else if(t==3){
+        lottery_tickets();
+    }
+}
+
+
+
+int distribute_tickets(int t, int tpid){
+    if(t < MIN){//eu defino que esse é o minimo
+        t = MIN;
+    }else if(t > MAX){
+            t = MAX;
+    }
+    if (tpid);
+    int x;
+    for(x = 0; x < last+1; x++){
+        if(v_tickets[x] == 0 && t > 0){
+            t--;
+            if(x == last)
+                last++;
+            v_tickets[x] = tpid;
+        }
+    }
+    return 1;
+    //falta o teste de quando o vetor está cheio
+    //quando last estiver proximo a 100, insere mais, irá passar de 100, então para em 100
+    
+}
+
+int remove_tickets(int pid){
+    int a;
+    for(a = 0; a < last; a++){
+        if(v_tickets[a]!=pid){//terá de haver um teste if(v_tickts[a] == RUNNABLE)
+           v_tickets[a] = 0;
+        }
+    }
+    v_tickets[pid]=0;
+    return a;
+    
+}
+
+int lottery_tickets(){// jogar para baixo depois da declaraçã da ptable
+	
+    int a,b,c;
+    b=0;
+    //struct proc *p;
+    
+    
+    //for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+      //if(p->state != RUNNABLE)
+        //continue;
+    
+    for(a = 0, c = 0; a < last; a++){
+        if(v_tickets[a]!=0){//terá de haver um teste if(v_tickts[a] == RUNNABLE)
+            v_l_tickets[b] = v_tickets[a];
+            c++;
+        }
+    }
+    //srand (time(NULL));
+    while(a < 1000000){
+        a++;
+         //b =rand()%c;
+        v_est[b]++;
+    }
+    for(a=0;a<100;a++){
+        //printf("[%d - %d]\n",a,v_est[a]);
+    }
+    // foi dado todos os tikets = 1
+    // senao 0;
+    return 1;
+}
+
+
+
+
+/*
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ */
 struct {
   struct spinlock lock;
   struct proc proc[NPROC];
@@ -211,14 +350,17 @@ fork(void)
   safestrcpy(np->name, curproc->name, sizeof(curproc->name));
 
   pid = np->pid;
+  //
+	if(distribute_tickets( 5, pid)){
+	  acquire(&ptable.lock);
 
-  acquire(&ptable.lock);
+	  np->state = RUNNABLE;
 
-  np->state = RUNNABLE;
+	  release(&ptable.lock);
 
-  release(&ptable.lock);
-
-  return pid;
+	 
+	}
+	 return pid;
 }
 
 // Exit the current process.  Does not return.
@@ -325,6 +467,7 @@ scheduler(void)
   struct proc *p;
   struct cpu *c = mycpu();
   c->proc = 0;
+  int uhull;
   
   for(;;){
     // Enable interrupts on this processor.
@@ -332,9 +475,17 @@ scheduler(void)
 
     // Loop over process table looking for process to run.
     acquire(&ptable.lock);
-    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-      if(p->state != RUNNABLE)
+    
+    //#########################################
+	uhull = lottery_tickets(); // pid sorteado
+    //for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+      //if(p->state != RUNNABLE)
+        //continue;
+     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+      if(p->pid != uhull)
         continue;
+        
+	//#########################################
 
       // Switch to chosen process.  It is the process's job
       // to release ptable.lock and then reacquire it
