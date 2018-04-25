@@ -7,8 +7,8 @@
 #include "proc.h"
 #include "spinlock.h"
 #include <stdio.h>
-#include <stdlib.h>
-#include <time.h>
+//#include <stdlib.h>
+//#include <time.h>
 
 /*
  * 
@@ -34,33 +34,6 @@ int last =0;
 int distribute_tickets(int t, int pid);
 int remove_tickets(int t);
 int lottery_tickets();
-void menu(int t){
-    int i;
-    if(t ==1){
-        while(t){
-            //printf("insira t tickets e o pid\n");
-           // scanf("%d",&t);
-            //scanf("%d",&pid);
-            if(t!=0)
-                //distribute_tickets(t,pid);
-            
-            for(i=0; i< last; i++){
-                //printf("[%d] ",v_tickets[i]);
-            }
-        }
-    }else if(t ==2){
-        while(t!=-1){
-            //printf("insira o t ticket a ser removido");
-            //scanf("%d",&t);
-            remove_tickets(t);
-            for(i=0; i< last; i++){
-                //printf("[%d] ",v_tickets[i]);
-            }
-        }
-    }else if(t==3){
-        lottery_tickets();
-    }
-}
 
 
 
@@ -70,6 +43,7 @@ int distribute_tickets(int t, int tpid){
     }else if(t > MAX){
             t = MAX;
     }
+cprintf("O processo %d foi criado com %d tickets\n",tpid,t);
     if (tpid);
     int x;
     for(x = 0; x < last+1; x++){
@@ -317,7 +291,7 @@ growproc(int n)
 // Sets up stack to return as if from system call.
 // Caller must set state of returned proc to RUNNABLE.
 int
-fork(void)
+fork(int tickets)
 {
   int i, pid;
   struct proc *np;
@@ -348,19 +322,15 @@ fork(void)
   np->cwd = idup(curproc->cwd);
 
   safestrcpy(np->name, curproc->name, sizeof(curproc->name));
-
+	
   pid = np->pid;
-  //
-	if(distribute_tickets( 5, pid)){
+	if(distribute_tickets(tickets, pid)){}
 	  acquire(&ptable.lock);
-
 	  np->state = RUNNABLE;
-
 	  release(&ptable.lock);
-
 	 
-	}
-	 return pid;
+	
+ return pid;
 }
 
 // Exit the current process.  Does not return.
@@ -467,7 +437,7 @@ scheduler(void)
   struct proc *p;
   struct cpu *c = mycpu();
   c->proc = 0;
-  int uhull;
+//  int uhull;
   
   for(;;){
     // Enable interrupts on this processor.
@@ -477,14 +447,14 @@ scheduler(void)
     acquire(&ptable.lock);
     
     //#########################################
-	uhull = lottery_tickets(); // pid sorteado
-    //for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-      //if(p->state != RUNNABLE)
-        //continue;
-     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-      if(p->pid != uhull)
+//	uhull = lottery_tickets(); // pid sorteado
+    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+      if(p->state != RUNNABLE)
         continue;
-        
+//     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+  //    if(p->pid != uhull)
+     //   continue;
+    //  
 	//#########################################
 
       // Switch to chosen process.  It is the process's job
@@ -683,3 +653,4 @@ procdump(void)
     cprintf("\n");
   }
 }
+
