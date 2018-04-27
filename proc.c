@@ -12,17 +12,6 @@
 
 /*
  * 
- * 
- * 
- * 
- * 
- * 
- * 
- * 
- * 
- * 
- * 
- * 
  */
 #define MIN 5
 #define MAX 25
@@ -34,55 +23,51 @@ int last =0;
 int distribute_tickets(int t, int pid);
 int remove_tickets(int t);
 int lottery_tickets();
+  long long int S=0;
 
+///sorteio 
+static unsigned long int next = 1; 
+ /*
+int 
+rand(int tickets_total) 
+{ 
+    next = next * 1103515245 + 12345; 
+    return (unsigned int)(next/65536) % tickets_total; 
+} 
+ 
+void 
+srand(unsigned int seed) 
+{ 
+    next = seed; 
+} 
+*/
 
+int 
+randon2(int tickets_total) 
+{ 
+    next = next * 1103515245 + 12345; 
+    return (unsigned int)(next/65536) % tickets_total; 
+} 
+ 
+void 
+srand(unsigned int seed) 
+{ 
+    next = seed; 
+} /*
+int randon2(int last){
 
-int distribute_tickets(int t, int tpid){
-    if(t < MIN){//eu defino que esse é o minimo
-        t = MIN;
-    }else if(t > MAX){
-            t = MAX;
-    }
-cprintf("O processo %d foi criado com %d tickets\n",tpid,t);
-    if (tpid);
-    int x;
-    for(x = 0; x < last+1; x++){
-        if(v_tickets[x] == 0 && t > 0){
-            t--;
-            if(x == last)
-                last++;
-            v_tickets[x] = tpid;
-        }
-    }
-    return 1;
-    //falta o teste de quando o vetor está cheio
-    //quando last estiver proximo a 100, insere mais, irá passar de 100, então para em 100
-    
-}
-
-int remove_tickets(int pid){
-    int a;
-    for(a = 0; a < last; a++){
-        if(v_tickets[a]!=pid){//terá de haver um teste if(v_tickts[a] == RUNNABLE)
-           v_tickets[a] = 0;
-        }
-    }
-    v_tickets[pid]=0;
-    return a;
-    
-}
-
+  long long int cons = 011111111111111111111;//2^31-1
+  long long int A = 16807;
+  long long int SS=0;  
+  S = (A * SS) % cons;
+  S = S % last;
+  return S;
+}*/
+/*
 int lottery_tickets(){// jogar para baixo depois da declaraçã da ptable
 	
     int a,b,c;
     b=0;
-    //struct proc *p;
-    
-    
-    //for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-      //if(p->state != RUNNABLE)
-        //continue;
-    
     for(a = 0, c = 0; a < last; a++){
         if(v_tickets[a]!=0){//terá de haver um teste if(v_tickts[a] == RUNNABLE)
             v_l_tickets[b] = v_tickets[a];
@@ -102,7 +87,7 @@ int lottery_tickets(){// jogar para baixo depois da declaraçã da ptable
     // senao 0;
     return 1;
 }
-
+*/
 
 
 
@@ -324,7 +309,15 @@ fork(int tickets)
   safestrcpy(np->name, curproc->name, sizeof(curproc->name));
 	
   pid = np->pid;
-	if(distribute_tickets(tickets, pid)){}
+   if(tickets < MIN){//eu defino que esse é o minimo
+        tickets = MIN;
+    }else if(tickets > MAX){
+        tickets = MAX;
+    }
+  //np->tickets = 10;
+  np->tickets = tickets;
+	//if(distribute_tickets(tickets, pid)){}
+    cprintf("%d tickets\n",tickets);
 	  acquire(&ptable.lock);
 	  np->state = RUNNABLE;
 	  release(&ptable.lock);
@@ -447,10 +440,25 @@ scheduler(void)
     acquire(&ptable.lock);
     
     //#########################################
-//	uhull = lottery_tickets(); // pid sorteado
+    /*
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
       if(p->state != RUNNABLE)
         continue;
+    //
+    */
+    int b = 0,a;
+    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+      if(p->state == RUNNABLE){
+        for(a=0; a <= p->tickets; a++,b++)
+          v_l_tickets[b] = p->pid;          
+        }
+      }
+      b = v_l_tickets[randon2(b)];
+      for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+        if(p->pid != b)
+            continue;
+            //*/
+      
 //     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
   //    if(p->pid != uhull)
      //   continue;
@@ -460,6 +468,7 @@ scheduler(void)
       // Switch to chosen process.  It is the process's job
       // to release ptable.lock and then reacquire it
       // before jumping back to us.
+
       c->proc = p;
       switchuvm(p);
       p->state = RUNNING;

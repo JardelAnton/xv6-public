@@ -4,8 +4,7 @@
 #include "types.h"
 #include "stat.h"
 #include "user.h"
-
-#define N  1000
+#define N  10000
 
 void
 printf(int fd, char *s, ...)
@@ -29,7 +28,7 @@ forktest(void)
   }
 
   if(n == N){
-    printf(1, "fork claimed to work N times!\n", N);
+    printf(1, "fork claimed to work %d times!\n", N);
     exit();
   }
 
