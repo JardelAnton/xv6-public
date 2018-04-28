@@ -5,23 +5,24 @@
 #define FILHOS  11
 
 int main(void){
-  int n,i=0, pid;
+  int n, pid;
 
-  printf(1, "fork test\n");
+  printf(1, "Inicio da chamadas\n");
 
   for(n=0; n<FILHOS; n++){
     //pid = fork(1);
-     if(i<(FILHOS/3)){
-            pid=fork(50);
-        }else if(i>=(FILHOS/3) &&  i<(2*(FILHOS/3))    ){
+     if(n<(FILHOS/3)){
+            pid=fork(5);
+        }else if(n>=(FILHOS/3) &&  n<(2*(FILHOS/3))    ){
             pid=fork(10);
         }else{
             pid=fork(20);
         }
     if(pid < 0)
       break;
-    if(pid == 0)
+    if(pid == 0){
       for(;;);
+    }
   }
 
   if(n == FILHOS){

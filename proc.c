@@ -27,42 +27,20 @@ int lottery_tickets();
 
 ///sorteio 
 static unsigned long int next = 1; 
- /*
 int 
-rand(int tickets_total) 
+rand(int tickets) 
 { 
     next = next * 1103515245 + 12345; 
-    return (unsigned int)(next/65536) % tickets_total; 
+    return (unsigned int)(next/65536) % tickets; 
 } 
  
+
 void 
 srand(unsigned int seed) 
 { 
     next = seed; 
-} 
-*/
+}
 
-int 
-randon2(int tickets_total) 
-{ 
-    next = next * 1103515245 + 12345; 
-    return (unsigned int)(next/65536) % tickets_total; 
-} 
- 
-void 
-srand(unsigned int seed) 
-{ 
-    next = seed; 
-} /*
-int randon2(int last){
-
-  long long int cons = 011111111111111111111;//2^31-1
-  long long int A = 16807;
-  long long int SS=0;  
-  S = (A * SS) % cons;
-  S = S % last;
-  return S;
-}*/
 /*
 int lottery_tickets(){// jogar para baixo depois da declaraçã da ptable
 	
@@ -314,10 +292,8 @@ fork(int tickets)
     }else if(tickets > MAX){
         tickets = MAX;
     }
-  //np->tickets = 10;
-  np->tickets = tickets;
-	//if(distribute_tickets(tickets, pid)){}
-    cprintf("%d tickets\n",tickets);
+    np->tickets = tickets;
+    np->qtd = 0;
 	  acquire(&ptable.lock);
 	  np->state = RUNNABLE;
 	  release(&ptable.lock);
@@ -430,8 +406,6 @@ scheduler(void)
   struct proc *p;
   struct cpu *c = mycpu();
   c->proc = 0;
-//  int uhull;
-  
   for(;;){
     // Enable interrupts on this processor.
     sti();
@@ -440,30 +414,46 @@ scheduler(void)
     acquire(&ptable.lock);
     
     //#########################################
-    /*
-    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-      if(p->state != RUNNABLE)
-        continue;
-    //
-    */
     int b = 0,a;
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
       if(p->state == RUNNABLE){
         for(a=0; a <= p->tickets; a++,b++)
-          v_l_tickets[b] = p->pid;          
+          v_l_tickets[b] = p->pid;
         }
       }
-      b = v_l_tickets[randon2(b)];
-      for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-        if(p->pid != b)
-            continue;
-            //*/
-      
-//     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-  //    if(p->pid != uhull)
-     //   continue;
-    //  
-	//#########################################
+      if(b>=5){
+        b = v_l_tickets[rand(b)];
+
+        for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+          if(p->pid != b)
+              continue;
+
+  	 //#########################################
+
+        // Switch to chosen process.  It is the process's job
+        // to release ptable.lock and then reacquire it
+        // before jumping back to us.
+
+        c->proc = p;
+        switchuvm(p);
+        p->state = RUNNING;
+        p->qtd++;
+
+        swtch(&(c->scheduler), p->context);
+        switchkvm();
+
+        // Process is done running for now.
+        // It should have changed its p->state before coming back.
+        c->proc = 0;
+      }
+      release(&ptable.lock);
+  }else{
+ 
+    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+      if(p->state != RUNNABLE)
+        continue;
+    //*/
+  //#########################################
 
       // Switch to chosen process.  It is the process's job
       // to release ptable.lock and then reacquire it
@@ -472,6 +462,7 @@ scheduler(void)
       c->proc = p;
       switchuvm(p);
       p->state = RUNNING;
+      p->qtd++;
 
       swtch(&(c->scheduler), p->context);
       switchkvm();
@@ -481,7 +472,7 @@ scheduler(void)
       c->proc = 0;
     }
     release(&ptable.lock);
-
+  }
   }
 }
 
@@ -615,6 +606,7 @@ kill(int pid)
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
     if(p->pid == pid){
       p->killed = 1;
+      cprintf("Esse processo foi chamado pelo escalonador %d vezes\n",p->qtd );
       // Wake process from sleep if necessary.
       if(p->state == SLEEPING)
         p->state = RUNNABLE;
