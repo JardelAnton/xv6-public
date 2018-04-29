@@ -1,50 +1,100 @@
-#include "param.h"
 #include "types.h"
 #include "stat.h"
 #include "user.h"
+#include "fs.h"
+#define FILHOS  10
 
-
-#define VALOR 1         
-#define FILHOS 10	
-//#define NUMEROGRANDE 987655432
 
 void loop(int p){
     double i, j;
 
-    for(i = 0; i < 100; i++)
-        for(j=0; j < 100; j++);
+    for(i = 0; i < 10000; i++)
+        for(j=0; j < 10000; j++);
 
-    //printf(1, "%d\n", p);
+    printf(1, "Terminou %d\n", p);
 }
 
-void meuprograma(){
+int main(void){
+    int p[10];
 
-    int pid;
-    int i;
-    for (i=0;i<FILHOS;i++){
-        if(i<(FILHOS/3)){
-            //pid = fork();
-            pid=fork(50);
-        }else if(i>=(FILHOS/3) &&  i<(2*(FILHOS/3))    ){
-            //pid = fork();
-            pid=fork(10);
-        }else{
-            //pid = fork();
-            pid=fork(20);
-        }if(pid == 0){
-            //testedosbilhetes();
-            exit();
-        }
-        
+
+    p[0] = fork(1);
+    printf(1,"%d tickets\n", 1);
+    if(p[0] == 0){
+        loop(0);
+        exit();
     }
-    //while (wait() != -1);
-    while(1){
-        wait();
-        if(pid<0)break;
-        //printf(VALOR,"Filho %d Terminou!\n",pid );
         
+    p[1] = fork(10);
+    printf(1,"%d tickets\n", 10);
+    if(p[1] == 0){
+        loop(1);
+        exit();
     }
+        
+    p[2] = fork(15);
+    printf(1,"%d tickets\n", 15);
+    if(p[2] == 0){
+        loop(2);
+        exit();
+    }   
     
+    p[3] = fork(20);
+    printf(1,"%d tickets\n", 20);
+    if(p[3] == 0){
+        loop(3);
+        exit(); 
+    }
+
+    p[4] = fork(50);
+    printf(1,"%d tickets\n", 25);
+    if(p[4] == 0){
+        loop(4);
+        exit();
+    }   
+    p[5] = fork(1);
+    printf(1,"%d tickets\n", 5);
+    if(p[5] == 0){
+        loop(5);
+        exit();
+    }   
+    p[6] = fork(17);
+    printf(1,"%d tickets\n", 17);
+    if(p[6] == 0){
+        loop(6);
+        exit();
+    }   
+    p[7] = fork(7);
+    printf(1,"%d tickets\n", 7);
+    if(p[7] == 0){
+        loop(7);
+        exit();
+    }   
+    p[8] = fork(23);
+    printf(1,"%d tickets\n", 23);
+    if(p[8] == 0){
+        loop(8);
+        exit();
+    }  
+    p[9] = fork(50);
+    printf(1,"%d tickets\n", 25);
+    if(p[9] == 0){
+        loop(9);
+        exit();
+    }    
+    
+    wait();
+    wait();
+    wait(); 
+    wait();
+    wait(); 
+    wait();
+    wait();
+    wait(); 
+    wait();
+    wait(); 
     
     exit();
+
+return 0;
 }

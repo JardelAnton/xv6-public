@@ -6,26 +6,15 @@
 #include "x86.h"
 #include "proc.h"
 #include "spinlock.h"
-#include <stdio.h>
-//#include <stdlib.h>
-//#include <time.h>
-
 /*
  * 
  */
 #define MIN 5
 #define MAX 25
-int v_tickets[100]; // para distribuição, armazena aos pids
-int v_l_tickets[100]; // pids Runnable para realizar ao sorteio
-int v_est[100];
+
+int v_l_tickets[1600]; //  Runnable pids | 64 processos * 25 , que é o máximo de cada processo.
 int last =0;
 
-int distribute_tickets(int t, int pid);
-int remove_tickets(int t);
-int lottery_tickets();
-  long long int S=0;
-
-///sorteio 
 static unsigned long int next = 1; 
 int 
 rand(int tickets) 
@@ -42,45 +31,6 @@ srand(unsigned int seed)
 }
 
 /*
-int lottery_tickets(){// jogar para baixo depois da declaraçã da ptable
-	
-    int a,b,c;
-    b=0;
-    for(a = 0, c = 0; a < last; a++){
-        if(v_tickets[a]!=0){//terá de haver um teste if(v_tickts[a] == RUNNABLE)
-            v_l_tickets[b] = v_tickets[a];
-            c++;
-        }
-    }
-    //srand (time(NULL));
-    while(a < 1000000){
-        a++;
-         //b =rand()%c;
-        v_est[b]++;
-    }
-    for(a=0;a<100;a++){
-        //printf("[%d - %d]\n",a,v_est[a]);
-    }
-    // foi dado todos os tikets = 1
-    // senao 0;
-    return 1;
-}
-*/
-
-
-
-/*
- * 
- * 
- * 
- * 
- * 
- * 
- * 
- * 
- * 
- * 
- * 
  * 
  */
 struct {
@@ -287,16 +237,16 @@ fork(int tickets)
   safestrcpy(np->name, curproc->name, sizeof(curproc->name));
 	
   pid = np->pid;
-   if(tickets < MIN){//eu defino que esse é o minimo
-        tickets = MIN;
-    }else if(tickets > MAX){
-        tickets = MAX;
-    }
-    np->tickets = tickets;
-    np->qtd = 0;
-	  acquire(&ptable.lock);
-	  np->state = RUNNABLE;
-	  release(&ptable.lock);
+  if(tickets < MIN){//eu defino que esse é o minimo
+      tickets = MIN;
+  }else if(tickets > MAX){
+      tickets = MAX;
+  }
+  np->tickets = tickets;
+  np->qtd = 0;
+  acquire(&ptable.lock);
+  np->state = RUNNABLE;
+  release(&ptable.lock);
 	 
 	
  return pid;
@@ -332,9 +282,10 @@ exit(void)
 
   // Parent might be sleeping in wait().
   wakeup1(curproc->parent);
-
+  cprintf("Esse processo pid %d tem %d tickets e foi chamado pelo escalonador %d vezes\n",curproc->pid,curproc->tickets, curproc->qtd );
   // Pass abandoned children to init.
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+
     if(p->parent == curproc){
       p->parent = initproc;
       if(p->state == ZOMBIE)
@@ -452,13 +403,7 @@ scheduler(void)
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
       if(p->state != RUNNABLE)
         continue;
-    //*/
-  //#########################################
-
-      // Switch to chosen process.  It is the process's job
-      // to release ptable.lock and then reacquire it
-      // before jumping back to us.
-
+    
       c->proc = p;
       switchuvm(p);
       p->state = RUNNING;
@@ -606,7 +551,7 @@ kill(int pid)
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
     if(p->pid == pid){
       p->killed = 1;
-      cprintf("Esse processo foi chamado pelo escalonador %d vezes\n",p->qtd );
+      cprintf("Esse processo tem %d tickets e foi chamado pelo escalonador %d vezes\n",p->tickets, p->qtd );
       // Wake process from sleep if necessary.
       if(p->state == SLEEPING)
         p->state = RUNNABLE;
