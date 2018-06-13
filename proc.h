@@ -49,8 +49,11 @@ struct proc {
   struct file *ofile[NOFILE];  // Open files
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
-  int tickets;
-  long int qtd;
+  int tickets;                 // passos do processo
+  int qtd;                     // quantidade de vezes que o processo foi acionado pelo escalonador
+  int passo;              // == 100 // 200 // 40
+  int t_inicial;
+  int t_final;
 };
 
 // Process memory is laid out contiguously, low addresses first:

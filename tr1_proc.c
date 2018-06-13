@@ -12,24 +12,25 @@
 #define MIN 5
 #define MAX 25
 
-int t_escalonador = 0;
-int v_l_tickets[3][1600]; //  Runnable pids | 64 processos * 25 , que é o máximo de cada processo.
-int encontra_menor(int last){
-  int a, menor = 0;
-  for(a = 0; a < last; a++){
-    menor=menor;
-    cprintf("%d menor = %d/ a = %d \n",a, v_l_tickets[1][ menor]* v_l_tickets[2][ menor], v_l_tickets[1][a]* v_l_tickets[2][a]);
-    if(v_l_tickets[1][a]*v_l_tickets[2][a] < v_l_tickets[1][menor]*v_l_tickets[2][menor]){
-      menor = a;
-    }
-  }
-  cprintf("menor é o %d\n", v_l_tickets[0][ menor]);
-  //ordenação por qtd*t_passos
-  return v_l_tickets[0][menor];
+int v_l_tickets[1600]; //  Runnable pids | 64 processos * 25 , que é o máximo de cada processo.
+int last =0;
+
+static unsigned long int next = 1; 
+int 
+rand(int tickets) 
+{ 
+    next = next * 1103515245 + 12345; 
+    return (unsigned int)(next/65536) % tickets; 
+} 
+ 
+
+void 
+srand(unsigned int seed) 
+{ 
+    next = seed; 
 }
 
 /*
-
  * 
  */
 struct {
@@ -236,7 +237,6 @@ fork(int tickets)
   safestrcpy(np->name, curproc->name, sizeof(curproc->name));
   
   pid = np->pid;
-  //--
   if(tickets < MIN){//eu defino que esse é o minimo
       tickets = MIN;
   }else if(tickets > MAX){
@@ -244,10 +244,6 @@ fork(int tickets)
   }
   np->tickets = tickets;
   np->qtd = 0;
-  //--
-  np->passo = 10000/tickets;
-  np->t_inicial = t_escalonador;
-  //--
   acquire(&ptable.lock);
   np->state = RUNNABLE;
   release(&ptable.lock);
@@ -286,8 +282,7 @@ exit(void)
 
   // Parent might be sleeping in wait().
   wakeup1(curproc->parent);
-  curproc->t_final = t_escalonador;
-  cprintf("Esse processo pid %d tem %d tickets e foi chamado pelo escalonador %d vezes, de %d a %d \n",curproc->pid,curproc->tickets, curproc->qtd, curproc->t_inicial, curproc->t_final );
+  cprintf("Esse processo pid %d tem %d tickets e foi chamado pelo escalonador %d vezes\n",curproc->pid,curproc->tickets, curproc->qtd );
   // Pass abandoned children to init.
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
 
@@ -356,46 +351,13 @@ wait(void)
 //  - swtch to start running that process
 //  - eventually that process transfers control
 //      via swtch back to the scheduler.
-typedef struct meu_vetor_proc{
-  int passo;
-  int qtd;
-  struct proc *p;
-}meu_vetor_p;
-
-void ordena(meu_vetor_p * meu_vetor){
-  meu_vetor_p aux;
-  int tam = NPROC;  
-  int trocas = 0;
-  int i, j, min;
-  for (i = 0; i < (tam-1); i++) 
-  {
-   min = i;
-   for (j = (i+1); j < tam; j++) {
-     if(meu_vetor[j].passo *meu_vetor[j].qtd < meu_vetor[min].passo * meu_vetor[min].qtd) 
-       min = j;
-   }
-   if (meu_vetor[i].p != meu_vetor[min].p) {
-    trocas++;
-     aux.p = meu_vetor[i].p;
-     meu_vetor[i].p = meu_vetor[min].p;
-     meu_vetor[min].p = aux.p;
-   }
-  }
-
-}
-
 void
 scheduler(void)
 {
   struct proc *p;
   struct cpu *c = mycpu();
-  struct proc *menor;
   c->proc = 0;
-  meu_vetor_p  meu_vetor[NPROC];
-  int ordenado = 0; //0 - não esta ordenado || 1 - esta ordenado
-  int i=0;
   for(;;){
-    
     // Enable interrupts on this processor.
     sti();
 
@@ -403,140 +365,62 @@ scheduler(void)
     acquire(&ptable.lock);
     
     //#########################################
-
-    /*Percorre linearmente a tabela de processos procurando o menor. Ao terminar de percorrer, já está apontando para o menor.
-    No pior caso terá de percorrer os Nproc processos  */
-    if(ordenado == 0){
-      //cprintf("entrou\n" );
-      menor = ptable.proc;
-      for(p = ptable.proc,i=0; p < &ptable.proc[NPROC]; p++){
-        if(p->state == RUNNABLE)// && p->qtd*p->passo < menor->qtd*menor->passo)
-          //  menor = p; 
-          i++;
+    int b = 0,a;
+    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+      if(p->state == RUNNABLE){
+        for(a=0; a <= p->tickets; a++,b++)
+          v_l_tickets[b] = p->pid;
         }
-      if(i>=2){
-          meu_vetor_p aux;
-          int tam = i; 
-          i=0;
-          for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-            if(p->state == RUNNABLE){
-              meu_vetor[i].passo = p->passo;
-              meu_vetor[i].qtd = p->qtd;
-              meu_vetor[i].p = p;
-              i++;
-            }
-          }
-          int trocas = 0;
-          int j, min;
-          for (i = 0; i < (tam-1); i++) 
-          {
-           min = i;
-           for (j = (i+1); j < tam; j++) {
-             if(meu_vetor[j].passo *meu_vetor[j].qtd < meu_vetor[min].passo * meu_vetor[min].qtd) 
-               min = j;
-           }
-           if (meu_vetor[i].p != meu_vetor[min].p) {
-            cprintf("[%d]-> %d %d\n", i, meu_vetor[i].passo, meu_vetor[i].qtd);     
-            trocas++;
-             aux.p = meu_vetor[i].p;
-             aux.passo = meu_vetor[i].passo;
-             aux.qtd = meu_vetor[i].qtd;
-             meu_vetor[i].p = meu_vetor[min].p;
-             meu_vetor[i].passo = meu_vetor[min].passo;
-             meu_vetor[i].qtd = meu_vetor[min].qtd;
-             meu_vetor[min].p = aux.p;
-             meu_vetor[min].passo = aux.passo;
-             meu_vetor[min].qtd = aux.qtd;
-             cprintf("[%d]-> %d %d\n", i, meu_vetor[i].passo, meu_vetor[i].qtd);     
-
-           }
-          }
-          //ordena meu vetor
-          ordenado = 0;
-          menor = meu_vetor[0].p;
-          if(meu_vetor[0].qtd*meu_vetor[0].passo < meu_vetor[1].qtd *meu_vetor[1].passo)
-            ordenado = 1;
-          p = menor;
-
-
-        
-         //#########################################
-
-          // Switch to chosen process.  It is the process's job
-          // to release ptable.lock and then reacquire it
-          // before jumping back to us.
-
-          c->proc = p;
-          switchuvm(p);
-          p->state = RUNNING;
-          p->qtd++;
-          if(p->passo ==0){
-            p->passo = 50;
-          }
-          t_escalonador++;
-
-          swtch(&(c->scheduler), p->context);
-          switchkvm();
-
-          // Process is done running for now.
-          // It should have changed its p->state before coming back.
-          c->proc = 0;
-          release(&ptable.lock);
-        }else{
-          //cprintf("continua no else");
-          for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-          if(p->state != RUNNABLE)
-            continue;
-        
-          c->proc = p;
-          switchuvm(p);
-          p->state = RUNNING;
-          p->qtd++;
-
-          swtch(&(c->scheduler), p->context);
-          switchkvm();
-
-          // Process is done running for now.
-          // It should have changed its p->state before coming back.
-          c->proc = 0;
-          }
-          release(&ptable.lock);
       }
-    }else{
-      //cprintf("ordenado");
-          ordenado = 0;
-          menor = meu_vetor[0].p;
-          if(meu_vetor[0].qtd*meu_vetor[0].passo < meu_vetor[0].qtd *meu_vetor[0].passo)
-            ordenado = 1;
-          p = menor;        
-         //#########################################
+      if(b>=5){
+        b = v_l_tickets[rand(b)];
 
-          // Switch to chosen process.  It is the process's job
-          // to release ptable.lock and then reacquire it
-          // before jumping back to us.
+        for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+          if(p->pid != b)
+              continue;
 
-          c->proc = p;
-          switchuvm(p);
-          p->state = RUNNING;
-          p->qtd++;
-          if(p->passo ==0){
-            p->passo = 50;
-          }
-          t_escalonador++;
-
-          swtch(&(c->scheduler), p->context);
-          switchkvm();
-
-          // Process is done running for now.
-          // It should have changed its p->state before coming back.
-          c->proc = 0;
-          release(&ptable.lock);
-    }
-  }
-}
      //#########################################
 
-//*/
+        // Switch to chosen process.  It is the process's job
+        // to release ptable.lock and then reacquire it
+        // before jumping back to us.
+
+        c->proc = p;
+        switchuvm(p);
+        p->state = RUNNING;
+        p->qtd++;
+
+        swtch(&(c->scheduler), p->context);
+        switchkvm();
+
+        // Process is done running for now.
+        // It should have changed its p->state before coming back.
+        c->proc = 0;
+      }
+      release(&ptable.lock);
+  }else{
+ 
+    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+      if(p->state != RUNNABLE)
+        continue;
+    
+      c->proc = p;
+      switchuvm(p);
+      p->state = RUNNING;
+      p->qtd++;
+
+      swtch(&(c->scheduler), p->context);
+      switchkvm();
+
+      // Process is done running for now.
+      // It should have changed its p->state before coming back.
+      c->proc = 0;
+    }
+    release(&ptable.lock);
+  }
+  }
+}
+
 // Enter scheduler.  Must hold only ptable.lock
 // and have changed proc->state. Saves and restores
 // intena because intena is a property of this
@@ -667,6 +551,7 @@ kill(int pid)
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
     if(p->pid == pid){
       p->killed = 1;
+      cprintf("Esse processo tem %d tickets e foi chamado pelo escalonador %d vezes\n",p->tickets, p->qtd );
       // Wake process from sleep if necessary.
       if(p->state == SLEEPING)
         p->state = RUNNABLE;
@@ -705,7 +590,7 @@ procdump(void)
       state = states[p->state];
     else
       state = "???";
-    cprintf("%d %s %s %d %d", p->pid, state, p->name, p->passo, p->qtd);
+    cprintf("%d %s %s", p->pid, state, p->name);
     if(p->state == SLEEPING){
       getcallerpcs((uint*)p->context->ebp+2, pc);
       for(i=0; i<10 && pc[i] != 0; i++)

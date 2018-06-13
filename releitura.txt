@@ -1,0 +1,12 @@
+proc.c: 
+	scheduler(){...}
+    /*Percorre linearmente a tabela de processos procurando o menor. Ao terminar de percorrer, já está apontando para o menor.
+    No pior caso terá de percorrer os Nproc processos  */
+
+	menor = ptable.proc;
+	for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+		if(p->state == RUNNABLE && p->qtd*p->passo < menor->qtd*menor->passo)
+			menor = p;      
+	}
+    p = menor;
+    {...}
